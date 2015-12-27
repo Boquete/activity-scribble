@@ -1,11 +1,14 @@
 #!/bin/sh
 
 if [ "`uname -a | grep x86_64`" ]; then
-    export PYTHONPATH="$PYTHONPATH:$SUGAR_BUNDLE_PATH/libs/lib64"
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SUGAR_BUNDLE_PATH/libs/lib64"
+    export PYTHONPATH="$PYTHONPATH:$SUGAR_BUNDLE_PATH/lib/x86-64"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SUGAR_BUNDLE_PATH/lib/x86-64"
+elif [ "`uname -a | grep armv7l`" ]; then
+    export PYTHONPATH="$PYTHONPATH:$SUGAR_BUNDLE_PATH/lib/arm"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SUGAR_BUNDLE_PATH/lib/arm"
 else
-    export PYTHONPATH="$PYTHONPATH:$SUGAR_BUNDLE_PATH/libs/lib"
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SUGAR_BUNDLE_PATH/libs/lib"
+    export PYTHONPATH="$PYTHONPATH:$SUGAR_BUNDLE_PATH/lib/x86"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SUGAR_BUNDLE_PATH/lib/x86"
 fi
 
 exec sugar-activity scribbleactivity.ScribbleActivity $@
