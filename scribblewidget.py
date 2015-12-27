@@ -27,12 +27,14 @@ DEFAULT_HEIGHT = 10
 CANVAS_WIDTH = 1187
 CANVAS_HEIGHT = 767
 
+
 class ScribbleWidget(goocanvas.Canvas):
     __gsignals__ = {
         'item-added': (gobject.SIGNAL_RUN_FIRST,
-                          gobject.TYPE_NONE,
-                          ([])),
+                       gobject.TYPE_NONE,
+                       ([])),
     }
+
     def __init__(self):
         goocanvas.Canvas.__init__(self)
         self.set_size_request(CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -57,14 +59,14 @@ class ScribbleWidget(goocanvas.Canvas):
         self.prev_time = 0
         self._fill_color = 0
         self._stroke_color = 0
-        self.cmd = None # method to draw the last item
-        self.cmd_list = "" # list of methods to draw the entire canvas
+        self.cmd = None  # method to draw the last item
+        self.cmd_list = ""  # list of methods to draw the entire canvas
 
     def set_fill_color(self, color):
-        self._fill_color = int(color.strip('#')+'FF', 16)
+        self._fill_color = int(color.strip('#') + 'FF', 16)
 
     def set_stroke_color(self, color):
-        self._stroke_color = int(color.strip('#')+'FF', 16)
+        self._stroke_color = int(color.strip('#') + 'FF', 16)
 
     def set_tool(self, tool):
         self.tool = tool
@@ -79,29 +81,44 @@ class ScribbleWidget(goocanvas.Canvas):
         self.item_height = DEFAULT_HEIGHT
 
         if self.tool == 'circle':
-            self.item = goocanvas.Ellipse(parent=self._root, center_x=x, \
-                    center_y=y, radius_x = DEFAULT_WIDTH/2, \
-                    radius_y = DEFAULT_HEIGHT/2, title=self.item_id, \
-                    fill_color_rgba = self._fill_color, \
-                    stroke_color_rgba = self._stroke_color)
+            self.item = goocanvas.Ellipse(
+                parent=self._root,
+                center_x=x,
+                center_y=y,
+                radius_x=DEFAULT_WIDTH / 2,
+                radius_y=DEFAULT_HEIGHT / 2,
+                title=self.item_id,
+                fill_color_rgba=self._fill_color,
+                stroke_color_rgba=self._stroke_color)
         elif self.tool == 'rect':
-            self.item = goocanvas.Rect(parent=self._root, x=x, y=y, \
-                    width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, \
-                    fill_color_rgba = self._fill_color, \
-                    stroke_color_rgba = self._stroke_color, title=self.item_id)
+            self.item = goocanvas.Rect(
+                parent=self._root,
+                x=x,
+                y=y,
+                width=DEFAULT_WIDTH,
+                height=DEFAULT_HEIGHT,
+                fill_color_rgba=self._fill_color,
+                stroke_color_rgba=self._stroke_color,
+                title=self.item_id)
         elif self.tool == 'pencil':
-            self.line_points = [] #Reset
+            self.line_points = []  # Reset
             self.line_points.append((x, y))
-            self.item = goocanvas.Polyline(parent=self._root, \
-                    points=goocanvas.Points(self.line_points), \
-                    stroke_color_rgba = self._stroke_color, title=self.item_id)
+            self.item = goocanvas.Polyline(
+                parent=self._root,
+                points=goocanvas.Points(
+                    self.line_points),
+                stroke_color_rgba=self._stroke_color,
+                title=self.item_id)
         elif self.tool == 'poly':
-            self.line_points = [] #Reset
+            self.line_points = []  # Reset
             self.line_points.append((x, y))
-            self.item = goocanvas.Polyline(parent=self._root, \
-                    points=goocanvas.Points(self.line_points), \
-                    stroke_color_rgba = self._stroke_color, \
-                    fill_color_rgba = self._fill_color, title=self.item_id)
+            self.item = goocanvas.Polyline(
+                parent=self._root,
+                points=goocanvas.Points(
+                    self.line_points),
+                stroke_color_rgba=self._stroke_color,
+                fill_color_rgba=self._fill_color,
+                title=self.item_id)
         elif self.tool == 'eraser':
             self.item = self.get_item_at(x, y, True)
         else:
@@ -125,16 +142,16 @@ class ScribbleWidget(goocanvas.Canvas):
             self.item.props.width = abs(dx)
             self.item.props.height = abs(dy)
         elif self.tool == 'pencil':
-            #XXX: This is pretty ugly - we should try some curve fitting stuff
-            dist = abs(math.sqrt(dx*dx + dy*dy))
+            # XXX: This is pretty ugly - we should try some curve fitting stuff
+            dist = abs(math.sqrt(dx * dx + dy * dy))
             self.line_points.append((x, y))
             if dist > 10 or dt > 10:
                 self.item.props.points = goocanvas.Points(self.line_points)
             self.item_orig_x = x
             self.item_orig_y = y
         elif self.tool == 'poly':
-            #XXX: This is pretty ugly - we should try some curve fitting stuff
-            dist = abs(math.sqrt(dx*dx + dy*dy))
+            # XXX: This is pretty ugly - we should try some curve fitting stuff
+            dist = abs(math.sqrt(dx * dx + dy * dy))
             self.line_points.append((x, y))
             if dist > 10 or dt > 10:
                 self.item.props.points = goocanvas.Points(self.line_points)
@@ -158,28 +175,28 @@ class ScribbleWidget(goocanvas.Canvas):
             self.cmd = "goocanvas.Ellipse(parent=self._root, center_x=%d, \
                 center_y=%d, radius_x = %d, radius_y = %d, \
                 fill_color_rgba = %d, stroke_color_rgba = %d, \
-                title = '%s')" % (self.item.props.center_x, \
-                self.item.props.center_y, self.item.props.radius_x, \
-                self.item.props.radius_y, self._fill_color, \
-                self._stroke_color, self.item_id)
+                title = '%s')" % (self.item.props.center_x,
+                                  self.item.props.center_y, self.item.props.radius_x,
+                                  self.item.props.radius_y, self._fill_color,
+                                  self._stroke_color, self.item_id)
         elif self.tool == 'rect':
             self.cmd = "goocanvas.Rect(parent=self._root, x=%d, y=%d, \
                 width=%d, height=%d, fill_color_rgba = %d, \
-                stroke_color_rgba = %d, title = '%s')" % (self.item.props.x, \
-                self.item.props.y, self.item.props.width, \
-                self.item.props.height, self._fill_color, self._stroke_color, \
-                self.item_id)
+                stroke_color_rgba = %d, title = '%s')" % (self.item.props.x,
+                                                          self.item.props.y, self.item.props.width,
+                                                          self.item.props.height, self._fill_color, self._stroke_color,
+                                                          self.item_id)
         elif self.tool == 'pencil':
             self.cmd = "goocanvas.Polyline(parent=self._root, \
                 points=goocanvas.Points(%s), stroke_color_rgba = %d, \
-                title = '%s')" % (str(self.line_points), self._stroke_color, \
-                self.item_id)
+                title = '%s')" % (str(self.line_points), self._stroke_color,
+                                  self.item_id)
         elif self.tool == 'poly':
             self.cmd = "goocanvas.Polyline(parent=self._root, \
                 points=goocanvas.Points(%s), stroke_color_rgba = %d, \
                 fill_color_rgba = %d, title = '%s')" \
-                % (str(self.line_points), self._stroke_color, \
-                self._fill_color, self.item_id)
+                % (str(self.line_points), self._stroke_color,
+                   self._fill_color, self.item_id)
         elif self.tool == 'eraser':
             if self.item is not None:
                 self.item.remove()
@@ -190,7 +207,7 @@ class ScribbleWidget(goocanvas.Canvas):
         else:
             pass
 
-        #print self.cmd
+        # print self.cmd
 
         if len(self.cmd_list) > 0:
             self.cmd_list += (';' + self.cmd)
@@ -200,22 +217,21 @@ class ScribbleWidget(goocanvas.Canvas):
         self.emit('item-added')
 
     def process_cmd(self, cmd):
-        #print 'Processing cmd :' + cmd
-        exec(cmd) #FIXME: Ugly hack, but I'm too lazy to do this nicely
+        # print 'Processing cmd :' + cmd
+        exec(cmd)  # FIXME: Ugly hack, but I'm too lazy to do this nicely
 
         if len(self.cmd_list) > 0:
             self.cmd_list += (';' + cmd)
         else:
             self.cmd_list = cmd
 
-
     def on_button_press(self, canvas, event):
         self.create_item(event.x, event.y)
         fleur = gtk.gdk.Cursor(gtk.gdk.FLEUR)
-        canvas.pointer_grab(self.item, \
-            gtk.gdk.POINTER_MOTION_MASK | \
-                gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_RELEASE_MASK,
-            fleur, event.time)
+        canvas.pointer_grab(self.item,
+                            gtk.gdk.POINTER_MOTION_MASK |
+                            gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_RELEASE_MASK,
+                            fleur, event.time)
         return True
 
     def on_button_release(self, canvas, event):

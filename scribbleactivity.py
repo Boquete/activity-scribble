@@ -25,8 +25,11 @@ from dbus.service import method, signal
 from dbus.gobject_service import ExportedGObject
 
 from sugar import profile
-from sugar.activity.activity import Activity, ActivityToolbox
-import sugar.graphics.radiotoolbutton
+from sugar.graphics.toolbarbox import ToolbarBox
+from sugar.activity.widgets import StopButton
+from sugar.activity.widgets import ActivityToolbarButton
+from sugar.graphics.radiotoolbutton import RadioToolButton
+from sugar.activity.activity import Activity
 from sugar.presence import presenceservice
 from sugar.presence.tubeconn import TubeConnection
 
@@ -40,36 +43,46 @@ PATH = "/org/randomink/sayamindu/Scribble"
 
 import scribblewidget
 
+
 class ScribbleActivity(Activity):
+
     def __init__(self, handle):
         print "running activity init", handle
         Activity.__init__(self, handle)
         print "activity running"
 
-        self._logger = logging.getLogger('scribble-activity')        
+        self._logger = logging.getLogger('scribble-activity')
 
-        toolbox = ActivityToolbox(self)
-        self.set_toolbox(toolbox)
+        self.activitybutton = ActivityToolbarButton(self)
+        stop = StopButton(self)
+
+        toolbox = ToolbarBox()
+        self.set_toolbar_box(toolbox)
         toolbox.show()
 
-        pencilbtn = sugar.graphics.radiotoolbutton.RadioToolButton()
+        toolbar = toolbox.toolbar
+        toolbar.insert(self.activitybutton, -1)
+
+        toolbar.insert(gtk.SeparatorToolItem(), -1)
+
+        pencilbtn = RadioToolButton()
         pencilbtn.set_named_icon('tool-pencil')
         pencilbtn.set_tooltip(_("Pencil"))
         pencilbtn.connect('toggled', self._pencil_cb)
 
-        circlebtn = sugar.graphics.radiotoolbutton.RadioToolButton()
+        circlebtn = RadioToolButton()
         circlebtn.set_named_icon('tool-shape-ellipse')
         circlebtn.set_tooltip(_("Ellipse"))
         circlebtn.connect('toggled', self._circle_cb)
         circlebtn.set_group(pencilbtn)
 
-        rectbtn = sugar.graphics.radiotoolbutton.RadioToolButton()
+        rectbtn = RadioToolButton()
         rectbtn.set_named_icon('tool-shape-rectangle')
         rectbtn.set_tooltip(_("Rectangle"))
         rectbtn.connect('toggled', self._rect_cb)
         rectbtn.set_group(circlebtn)
 
-        polybtn = sugar.graphics.radiotoolbutton.RadioToolButton()
+        polybtn = RadioToolButton()
         polybtn.set_named_icon('tool-shape-freeform')
         polybtn.set_tooltip(_("Shape"))
         polybtn.connect('toggled', self._poly_cb)
@@ -79,13 +92,12 @@ class ScribbleActivity(Activity):
         sep.set_expand(False)
         sep.set_draw(True)
 
-        erasebtn = sugar.graphics.radiotoolbutton.RadioToolButton()
+        erasebtn = RadioToolButton()
         erasebtn.set_named_icon('tool-eraser')
         erasebtn.set_tooltip(_("Erase"))
         erasebtn.connect('toggled', self._erase_cb)
         erasebtn.set_group(polybtn)
 
-        toolbar = gtk.Toolbar()
         toolbar.insert(pencilbtn, -1)
         toolbar.insert(circlebtn, -1)
         toolbar.insert(rectbtn, -1)
@@ -101,13 +113,13 @@ class ScribbleActivity(Activity):
         exportbtn = ExportButton(self)
         toolbar.insert(exportbtn, -1)
         exportbtn.show()
-        
-        toolbox.add_toolbar(_('Toolbox'), toolbar)
-        toolbar.show_all()
+
+        toolbar.insert(gtk.SeparatorToolItem(), -1)
+        toolbar.insert(stop, -1)
 
         self._scribblewidget = scribblewidget.ScribbleWidget()
-        self._scribblewidget.connect('item-added', \
-                self.scribblewidget_item_added_cb)
+        self._scribblewidget.connect('item-added',
+                                     self.scribblewidget_item_added_cb)
         colors = profile.get_color()
         self._scribblewidget.set_fill_color(colors.get_fill_color())
         self._scribblewidget.set_stroke_color(colors.get_stroke_color())
@@ -122,7 +134,7 @@ class ScribbleActivity(Activity):
 
         self.cmdtube = None  # Shared session
         self.initiating = False
-        
+
         # get the Presence Service
         self.pservice = presenceservice.get_instance()
         # Buddy object for you
@@ -131,6 +143,8 @@ class ScribbleActivity(Activity):
 
         self.connect('shared', self._shared_cb)
         self.connect('joined', self._joined_cb)
+
+        self.show_all()
 
     def _pencil_cb(self, button):
         if button.props.active:
@@ -156,10 +170,10 @@ class ScribbleActivity(Activity):
         window = self._scribblewidget.window
         width, height = window.get_size()
         pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, has_alpha=False,
-                                    bits_per_sample=8, width=width,
-                                    height=height)
+                            bits_per_sample=8, width=width,
+                            height=height)
         pb.get_from_drawable(window, window.get_colormap(), 0, 0, 0, 0,
-                                     width, height)
+                             width, height)
 
         if mimetype == 'image/jpeg':
             pb.save(file_path, 'jpeg', options)
@@ -237,25 +251,27 @@ class ScribbleActivity(Activity):
 
     def _new_tube_cb(self, id, initiator, type, service, params, state):
         self._logger.debug('New tube: ID=%d initator=%d type=%d service=%s '
-                        'params=%r state=%d', id, initiator, type, service,
-                        params, state)
+                           'params=%r state=%d', id, initiator, type, service,
+                           params, state)
         if (type == telepathy.TUBE_TYPE_DBUS and
-            service == SERVICE):
+                service == SERVICE):
             if state == telepathy.TUBE_STATE_LOCAL_PENDING:
-                self.tubes_chan[telepathy.CHANNEL_TYPE_TUBES].AcceptDBusTube(id)
-            tube_conn = TubeConnection(self.conn,
-                self.tubes_chan[telepathy.CHANNEL_TYPE_TUBES], id,
-                group_iface=self.text_chan[telepathy.CHANNEL_INTERFACE_GROUP])
+                self.tubes_chan[
+                    telepathy.CHANNEL_TYPE_TUBES].AcceptDBusTube(id)
+            tube_conn = TubeConnection(
+                self.conn, self.tubes_chan[
+                    telepathy.CHANNEL_TYPE_TUBES], id, group_iface=self.text_chan[
+                    telepathy.CHANNEL_INTERFACE_GROUP])
             self.cmdtube = CanvasSync(tube_conn, self.initiating,
-                                        self.process_cmd_cb,
-                                        self._get_buddy, self._scribblewidget)
+                                      self.process_cmd_cb,
+                                      self._get_buddy, self._scribblewidget)
 
-    def _buddy_joined_cb (self, activity, buddy):
+    def _buddy_joined_cb(self, activity, buddy):
         """Called when a buddy joins the shared activity.
         """
         self._logger.debug('Buddy %s joined', buddy.props.nick)
 
-    def _buddy_left_cb (self, activity, buddy):
+    def _buddy_left_cb(self, activity, buddy):
         """Called when a buddy leaves the shared activity.
         """
         self._logger.debug('Buddy %s left', buddy.props.nick)
@@ -268,10 +284,10 @@ class ScribbleActivity(Activity):
         self._logger.debug('My handle in that group is %u', my_csh)
         if my_csh == cs_handle:
             handle = self.conn.GetSelfHandle()
-            self._logger.debug('CS handle %u belongs to me, %u', \
-                cs_handle, handle)
+            self._logger.debug('CS handle %u belongs to me, %u',
+                               cs_handle, handle)
         elif group.GetGroupFlags() \
-            & telepathy.CHANNEL_GROUP_FLAG_CHANNEL_SPECIFIC_HANDLES:
+                & telepathy.CHANNEL_GROUP_FLAG_CHANNEL_SPECIFIC_HANDLES:
             handle = group.GetHandleOwners([cs_handle])[0]
             self._logger.debug('CS handle %u belongs to %u', cs_handle, handle)
         else:
@@ -282,19 +298,21 @@ class ScribbleActivity(Activity):
         return self.pservice.get_buddy_by_telepathy_handle(
             self.conn.service_name, self.conn.object_path, handle)
 
+
 class CanvasSync(ExportedGObject):
     """The bit that talks over the TUBES!!!"""
-    def __init__(self, tube, is_initiator, text_received_cb, get_buddy, \
-            scribblewidget):
+
+    def __init__(self, tube, is_initiator, text_received_cb, get_buddy,
+                 scribblewidget):
         super(CanvasSync, self).__init__(tube, PATH)
         self._logger = logging.getLogger('draw-activity.CanvasSync')
         self.tube = tube
         self.is_initiator = is_initiator
         self.text_received_cb = text_received_cb
         self.entered = False  # Have we set up the tube?
-        self.text = '' # State that gets sent or received
+        self.text = ''  # State that gets sent or received
         self._get_buddy = get_buddy  # Converts handle to Buddy object
-        self._scribblewidget = scribblewidget 
+        self._scribblewidget = scribblewidget
         self.tube.watch_participants(self.participant_change_cb)
 
     def participant_change_cb(self, added, removed):
@@ -312,7 +330,7 @@ class CanvasSync(ExportedGObject):
         if not self.entered:
             if self.is_initiator:
                 self._logger.debug("I'm initiating the tube, will "
-                    "watch for hellos.")
+                                   "watch for hellos.")
                 self.add_share_init_handler()
             else:
                 self.ShareInit()
@@ -334,9 +352,9 @@ class CanvasSync(ExportedGObject):
     def add_share_init_handler(self):
         print('Adding init handler.')
         self.tube.add_signal_receiver(self.share_init_cb, 'ShareInit', IFACE,
-            path=PATH, sender_keyword='sender')        
+                                      path=PATH, sender_keyword='sender')
         self.tube.add_signal_receiver(self.sendshape_cb, 'SendShape', IFACE,
-            path=PATH, sender_keyword='sender')
+                                      path=PATH, sender_keyword='sender')
 
     def share_init_cb(self, sender=None):
         """The initial handshake where we send the state of the canvas"""
@@ -346,7 +364,7 @@ class CanvasSync(ExportedGObject):
         self._logger.debug('Welcoming and sending newcomer the canvas state')
         cmds = self._scribblewidget.get_cmd_list()
         self.tube.get_object(sender, PATH).AckInit(cmds,
-                                                 dbus_interface=IFACE)
+                                                   dbus_interface=IFACE)
 
     def sendshape_cb(self, text, sender=None):
         """Handler for somebody sending SendShape"""

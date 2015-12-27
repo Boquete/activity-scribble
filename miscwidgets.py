@@ -20,7 +20,7 @@ import time
 from gettext import gettext as _
 import logging
 
-import gobject 
+import gobject
 
 from sugar.graphics.toolbutton import ToolButton
 from sugar.graphics.menuitem import MenuItem
@@ -28,14 +28,15 @@ from sugar.datastore import datastore
 
 logger = logging.getLogger('scribble-activity')
 
-class ExportButton(ToolButton):
-    _EXPORT_FORMATS = [{'mime_type' : 'image/jpeg',
-                        'title'     : _('JPEG'),
-                        'exp_props' : {"quality":"85"}},
 
-                       {'mime_type' : 'image/png',
-                        'title'     : _('PNG'),
-                        'exp_props' : {}}]
+class ExportButton(ToolButton):
+    _EXPORT_FORMATS = [{'mime_type': 'image/jpeg',
+                        'title': _('JPEG'),
+                        'exp_props': {"quality": "85"}},
+
+                       {'mime_type': 'image/png',
+                        'title': _('PNG'),
+                        'exp_props': {}}]
 
     def __init__(self, activity):
         ToolButton.__init__(self, 'document-save')
@@ -53,8 +54,8 @@ class ExportButton(ToolButton):
 
     def _clicked_cb(self, widget):
         self._export(self._activity, self._EXPORT_FORMATS[0])
-        
-    #def do_clicked(self):
+
+    # def do_clicked(self):
     #    self._export(self._activity, _EXPORT_FORMATS[0])
 
     def _export(self, activity, fmt):
@@ -64,9 +65,9 @@ class ExportButton(ToolButton):
         fileObject = datastore.create()
         act_meta = activity.metadata
         fileObject.metadata['title'] = \
-                _('Exported image from %s') % (act_meta['title'])
+            _('Exported image from %s') % (act_meta['title'])
         fileObject.metadata['title_set_by_user'] = \
-                act_meta['title_set_by_user']
+            act_meta['title_set_by_user']
         fileObject.metadata['mime_type'] = fmt['mime_type']
 
         fileObject.metadata['icon-color'] = act_meta['icon-color']
@@ -76,9 +77,9 @@ class ExportButton(ToolButton):
 
         # write out the document contents in the requested format
         fileObject.file_path = os.path.join(activity.get_activity_root(),
-                'instance', '%i' % time.time())
-        activity.export(fileObject.file_path, fmt['mime_type'], \
-                exp_props)
+                                            'instance', '%i' % time.time())
+        activity.export(fileObject.file_path, fmt['mime_type'],
+                        exp_props)
 
         # store the journal item
         datastore.write(fileObject, transfer_ownership=True)
